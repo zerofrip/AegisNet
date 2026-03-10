@@ -11,8 +11,19 @@ class WireGuardManager @Inject constructor(
     private val wgProfileDao: WgProfileDao
 ) {
 
+    suspend fun getAllProfiles(): List<WgProfile> {
+        return wgProfileDao.getAll().first()
+    }
+
+    suspend fun addProfile(profile: WgProfile) {
+        wgProfileDao.insert(profile)
+    }
+
+    suspend fun addProfiles(profiles: List<WgProfile>) {
+        profiles.forEach { wgProfileDao.insert(it) }
+    }
+
     suspend fun getActiveProfile(): WgProfile? {
-        // Enforces only one active profile
         return wgProfileDao.getAll().first().firstOrNull { it.isActive }
     }
 

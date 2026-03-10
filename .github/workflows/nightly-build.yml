@@ -1,0 +1,71 @@
+name: Android Nightly Build
+
+on:
+  schedule:
+    # Runs at 03:00 UTC daily
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  nightly-build:
+    name: Generate Nightly Artifact
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          cache: true
+
+      - name: Setup Android SDK & NDK
+        uses: android-actions/setup-android@v3
+
+      - name: Compile sing-box core libraries
+        run: |
+          chmod +x build-scripts/build-singbox.sh
+          # Pass the standard NDK path explicitly from the Actions runner environment into the script
+          export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk-bundle
+          if [ ! -d "$ANDROID_NDK_HOME" ]; then
+             export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/$(ls -1 $ANDROID_SDK_ROOT/ndk | tail -n 1)
+          fi
+          ./build-scripts/build-singbox.sh
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build Debug APK
+        run: gradle assembleDebug
+
+      - name: Generate Nightly Version Name
+        id: versioning
+        run: |
+          DATE_STAMP=$(date +'%Y%m%d')
+          echo "artifact_name=AegisNet-1.0.0-nightly-${DATE_STAMP}.apk" >> $GITHUB_OUTPUT
+
+      - name: Prepare Artifact path
+        id: apk-path
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          mv "$APK_PATH" "app/build/outputs/apk/debug/${{ steps.versioning.outputs.artifact_name }}"
+          echo "apk_path=app/build/outputs/apk/debug/${{ steps.versioning.outputs.artifact_name }}" >> $GITHUB_OUTPUT
+
+      - name: Upload Nightly APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AegisNet-nightly-apk
+          path: ${{ steps.apk-path.outputs.apk_path }}
+          retention-days: 14

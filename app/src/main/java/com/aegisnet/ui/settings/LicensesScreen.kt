@@ -1,4 +1,4 @@
-package com.aegisnet.ui.screens
+package com.aegisnet.ui.settings
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState

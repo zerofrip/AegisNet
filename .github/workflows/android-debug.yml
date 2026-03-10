@@ -1,17 +1,14 @@
-name: AegisNet CI/CD
+name: Android Debug CI
 
 on:
   push:
     branches: [ "main" ]
-    tags:
-      - 'v*'
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch:
 
 jobs:
-  build:
-    name: Build & Publish AegisNet
+  build-debug:
+    name: Build Debug APK
     runs-on: ubuntu-latest
 
     steps:
@@ -37,40 +34,40 @@ jobs:
       - name: Setup Android SDK & NDK
         uses: android-actions/setup-android@v3
 
-      # Using environment variables automatically provisioned by the setup-android action
       - name: Compile sing-box core libraries
         run: |
           chmod +x build-scripts/build-singbox.sh
           # Pass the standard NDK path explicitly from the Actions runner environment into the script
           export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk-bundle
           if [ ! -d "$ANDROID_NDK_HOME" ]; then
-             # Try locating the latest specific NDK installed by default on GitHub Ubuntu runners
              export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/$(ls -1 $ANDROID_SDK_ROOT/ndk | tail -n 1)
           fi
           ./build-scripts/build-singbox.sh
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
 
-      - name: Build unsigned Release APK
-        run: ./gradlew assembleRelease
+      - name: Build Debug APK
+        run: gradle assembleDebug
+
+      - name: Generate Version Prefix
+        id: versioning
+        run: |
+          # AegisNet Version strategy for Dev Push -> 1.0.0-dev-{hash}
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "artifact_name=AegisNet-1.0.0-dev-${SHORT_SHA}-debug.apk" >> $GITHUB_OUTPUT
 
       - name: Prepare Artifact path
         id: apk-path
         run: |
-          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
-          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+          APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          # Rename apk locally
+          mv "$APK_PATH" "app/build/outputs/apk/debug/${{ steps.versioning.outputs.artifact_name }}"
+          echo "apk_path=app/build/outputs/apk/debug/${{ steps.versioning.outputs.artifact_name }}" >> $GITHUB_OUTPUT
 
-      - name: Upload APK Artifact
+      - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: AegisNet-APK
+          name: AegisNet-debug-apk
           path: ${{ steps.apk-path.outputs.apk_path }}
-          retention-days: 7
-
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/v')
-        with:
-          files: ${{ steps.apk-path.outputs.apk_path }}
-          generate_release_notes: true
+          retention-days: 14

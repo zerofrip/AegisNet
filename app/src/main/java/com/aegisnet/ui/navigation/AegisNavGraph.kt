@@ -29,6 +29,7 @@ fun AegisNavGraph() {
                 onNavigateToFilters = { navController.navigate("filters") },
                 onNavigateToWhitelist = { navController.navigate("whitelist") },
                 onNavigateToRouting = { navController.navigate("routing") },
+                onNavigateToWireGuard = { navController.navigate("wireguard") },
                 onNavigateToLicenses = { navController.navigate("licenses") },
                 onNavigateToSettings = { navController.navigate("settings") }
             )

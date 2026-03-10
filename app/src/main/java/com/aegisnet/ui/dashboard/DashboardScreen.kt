@@ -21,6 +21,7 @@ fun DashboardScreen(
     onNavigateToFilters: () -> Unit,
     onNavigateToWhitelist: () -> Unit,
     onNavigateToRouting: () -> Unit,
+    onNavigateToWireGuard: () -> Unit,
     onNavigateToLicenses: () -> Unit,
     onNavigateToSettings: () -> Unit
 ) {
@@ -112,7 +113,10 @@ fun DashboardScreen(
                 Text("Whitelist Lists")
             }
             Button(onClick = onNavigateToRouting, modifier = Modifier.fillMaxWidth()) {
-                Text("Smart Routing & WireGuard")
+                Text("Smart Routing Rules")
+            }
+            Button(onClick = onNavigateToWireGuard, modifier = Modifier.fillMaxWidth()) {
+                Text("WireGuard Profiles")
             }
             Button(onClick = onNavigateToSettings, modifier = Modifier.fillMaxWidth()) {
                 Text("Settings & Update Intervals")
