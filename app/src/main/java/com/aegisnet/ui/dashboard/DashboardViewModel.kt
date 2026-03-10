@@ -1,0 +1,73 @@
+package com.aegisnet.ui.dashboard
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.aegisnet.dns.DNSManager
+import com.aegisnet.singbox.SingBoxController
+import com.aegisnet.singbox.SingBoxManager
+import com.aegisnet.wireguard.WireGuardManager
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+data class DashboardState(
+    val isVpnActive: Boolean = false,
+    val txBytes: Long = 0,
+    val rxBytes: Long = 0,
+    val blockedCount: Long = 0,
+    val activeDns: String = "Default",
+    val activeWireGuard: String = "None"
+)
+
+@HiltViewModel
+class DashboardViewModel @Inject constructor(
+    private val singBoxManager: SingBoxManager,
+    private val singBoxController: SingBoxController,
+    private val dnsManager: DNSManager,
+    private val wireGuardManager: WireGuardManager
+) : ViewModel() {
+
+    private val _state = MutableStateFlow(DashboardState())
+    val state = _state.asStateFlow()
+
+    init {
+        startStatsUpdate()
+        observeActiveSettings()
+    }
+
+    private fun startStatsUpdate() {
+        viewModelScope.launch {
+            while (true) {
+                if (singBoxManager.isRunning()) {
+                    val stats = singBoxController.getTrafficStats()
+                    val blocked = singBoxController.getBlockedCount()
+                    _state.update { it.copy(
+                        isVpnActive = true,
+                        txBytes = stats.getOrElse(0) { 0 },
+                        rxBytes = stats.getOrElse(1) { 0 },
+                        blockedCount = blocked
+                    ) }
+                } else {
+                    _state.update { it.copy(isVpnActive = false) }
+                }
+                delay(1000)
+            }
+        }
+    }
+
+    private fun observeActiveSettings() {
+        viewModelScope.launch {
+            combine(
+                dnsManager.getActiveProfilesFlow(),
+                flow { emit(wireGuardManager.getActiveProfile()) } // Simplification, ideally active profile should be a Flow
+            ) { dns, wg ->
+                _state.update { it.copy(
+                    activeDns = dns.firstOrNull()?.name ?: "Default",
+                    activeWireGuard = wg?.name ?: "None"
+                ) }
+            }.collect()
+        }
+    }
+}

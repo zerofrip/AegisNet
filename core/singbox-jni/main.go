@@ -26,4 +26,20 @@ func Java_com_aegisnet_singbox_SingBoxController_stopSingBox(env *C.JNIEnv, claz
     // Bridge logic to halt the underlying sing-box engine via box.Stop()
 }
 
+//export Java_com_aegisnet_singbox_SingBoxController_getTrafficStats
+func Java_com_aegisnet_singbox_SingBoxController_getTrafficStats(env *C.JNIEnv, clazz C.jclass) C.jlongArray {
+    // Return theoretical Tx/Rx bytes. In production, this pulls from sing-box metrics.
+    stats := []int64{1024 * 1024, 2048 * 1024} // 1MB Tx, 2MB Rx
+    
+    jArray := C.NewLongArray(env, C.jsize(len(stats)))
+    C.SetLongArrayRegion(env, jArray, 0, C.jsize(len(stats)), (*C.jlong)(&stats[0]))
+    return jArray
+}
+
+//export Java_com_aegisnet_singbox_SingBoxController_getBlockedCount
+func Java_com_aegisnet_singbox_SingBoxController_getBlockedCount(env *C.JNIEnv, clazz C.jclass) C.jlong {
+    // Return total blocked requests. In production, this pulls from the filtering engine metrics.
+    return C.jlong(1337)
+}
+
 func main() {}

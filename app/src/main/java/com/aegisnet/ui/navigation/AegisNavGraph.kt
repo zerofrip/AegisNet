@@ -14,6 +14,7 @@ import com.aegisnet.ui.dns.DnsSettingsScreen
 import com.aegisnet.ui.filters.FilterListsScreen
 import com.aegisnet.ui.routing.RoutingSettingsScreen
 import com.aegisnet.ui.settings.LicensesScreen
+import com.aegisnet.ui.settings.LogsScreen
 import com.aegisnet.ui.settings.SettingsScreen
 import com.aegisnet.ui.whitelist.WhitelistListsScreen
 import com.aegisnet.ui.wireguard.WireGuardSettingsScreen
@@ -31,7 +32,8 @@ fun AegisNavGraph() {
                 onNavigateToRouting = { navController.navigate("routing") },
                 onNavigateToWireGuard = { navController.navigate("wireguard") },
                 onNavigateToLicenses = { navController.navigate("licenses") },
-                onNavigateToSettings = { navController.navigate("settings") }
+                onNavigateToSettings = { navController.navigate("settings") },
+                onNavigateToLogs = { navController.navigate("logs") }
             )
         }
         composable("dns") { 
@@ -54,6 +56,9 @@ fun AegisNavGraph() {
         }
         composable("settings") { 
             SettingsScreen(onNavigateBack = { navController.popBackStack() }) 
+        }
+        composable("logs") {
+            LogsScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }

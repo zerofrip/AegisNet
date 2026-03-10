@@ -10,8 +10,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.aegisnet.vpn.AegisVpnService
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -23,10 +25,12 @@ fun DashboardScreen(
     onNavigateToRouting: () -> Unit,
     onNavigateToWireGuard: () -> Unit,
     onNavigateToLicenses: () -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
+    onNavigateToLogs: () -> Unit,
+    viewModel: DashboardViewModel = hiltViewModel()
 ) {
+    val state by viewModel.state.collectAsState()
     val context = LocalContext.current
-    var isVpnActive by remember { mutableStateOf(false) }
 
     val vpnServiceLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -59,26 +63,24 @@ fun DashboardScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = if (isVpnActive) "VPN Connected" else "VPN Disconnected",
+                        text = if (state.isVpnActive) "VPN Connected" else "VPN Disconnected",
                         style = MaterialTheme.typography.headlineSmall,
-                        color = if (isVpnActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        color = if (state.isVpnActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(onClick = {
-                        if (isVpnActive) {
+                        if (state.isVpnActive) {
                             stopVpnService(context)
-                            isVpnActive = false
                         } else {
                             val intent = VpnService.prepare(context)
                             if (intent != null) {
                                 vpnServiceLauncher.launch(intent)
                             } else {
                                 startVpnService(context)
-                                isVpnActive = true
                             }
                         }
                     }) {
-                        Text(if (isVpnActive) "Disconnect" else "Connect")
+                        Text(if (state.isVpnActive) "Disconnect" else "Connect")
                     }
                     
                     Spacer(modifier = Modifier.height(16.dp))
@@ -87,15 +89,19 @@ fun DashboardScreen(
                     
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Current DNS:", style = MaterialTheme.typography.bodyMedium)
-                        Text("Default", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                        Text(state.activeDns, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
                     }
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("WireGuard Profile:", style = MaterialTheme.typography.bodyMedium)
-                        Text("None", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                        Text(state.activeWireGuard, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
                     }
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Traffic Tx/Rx:", style = MaterialTheme.typography.bodyMedium)
-                        Text("0 B / 0 B", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                        Text("Blocked Requests:", style = MaterialTheme.typography.bodyMedium)
+                        Text(state.blockedCount.toString(), style = MaterialTheme.typography.bodyMedium, color = Color.Red)
+                    }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Traffic Tx / Rx:", style = MaterialTheme.typography.bodyMedium)
+                        Text("${formatBytes(state.txBytes)} / ${formatBytes(state.rxBytes)}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -121,6 +127,9 @@ fun DashboardScreen(
             Button(onClick = onNavigateToSettings, modifier = Modifier.fillMaxWidth()) {
                 Text("Settings & Update Intervals")
             }
+            Button(onClick = onNavigateToLogs, modifier = Modifier.fillMaxWidth()) {
+                Text("System Logs")
+            }
             
             Spacer(modifier = Modifier.weight(1f))
             TextButton(onClick = onNavigateToLicenses) {
@@ -142,4 +151,11 @@ private fun stopVpnService(context: Context) {
         action = AegisVpnService.ACTION_STOP
     }
     context.startForegroundService(intent)
+}
+
+private fun formatBytes(bytes: Long): String {
+    if (bytes < 1024) return "$bytes B"
+    if (bytes < 1024 * 1024) return "%.2f KB".format(bytes / 1024.0)
+    if (bytes < 1024 * 1024 * 1024) return "%.2f MB".format(bytes / (1024.0 * 1024.0))
+    return "%.2f GB".format(bytes / (1024.0 * 1024.0 * 1024.0))
 }

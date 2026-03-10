@@ -24,4 +24,15 @@ class SingBoxController @Inject constructor() {
      * Gracefully halts networking listeners terminating the Go routine memory loop.
      */
     external fun stopSingBox()
+
+    /**
+     * Returns the total traffic statistics since the engine started.
+     * @return Array containing [txBytes, rxBytes]
+     */
+    external fun getTrafficStats(): LongArray
+
+    /**
+     * Returns the number of blocked requests since the engine started.
+     */
+    external fun getBlockedCount(): Long
 }

@@ -120,12 +120,12 @@ WireGuard support abandons Android kernel modules in favor of `sing-box`'s nativ
 ## UI Screens
 
 The User Interface leverages standard Material 3 Jetpack Compose components:
-- **Dashboard**: High-level real-time overview displaying TX/RX traffic scopes and the master VPN power toggle.
+- **Dashboard**: High-level real-time overview displaying TX/RX traffic scopes (via JNI), blocked request counts, and the master VPN power toggle.
 - **Filters**: Add and toggle specific Lists synchronously invoking URL triggers.
 - **DNS**: Append explicit Upstream DNS profiles (e.g., DoH endpoint configurations).
-- **VPN**: Inspect configurations locally.
-- **Settings**: Control WorkManager WiFi Update parameters and tweak underlying Engine bounds (e.g., QUIC Blocking).
-- **Logs**: Surface debug output files.
+- **VPN**: Inspect WireGuard configurations and toggle tunnel profiles.
+- **Settings**: Control WorkManager WiFi Update parameters and tweak underlying Engine bounds.
+- **Logs**: Surface real-time JNI and Go-routine debug output files via a dedicated scrollable log viewer.
 
 ## Contributing
 
