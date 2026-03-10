@@ -40,7 +40,12 @@ jobs:
           # Pass the standard NDK path explicitly from the Actions runner environment into the script
           export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk-bundle
           if [ ! -d "$ANDROID_NDK_HOME" ]; then
-             export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/$(ls -1 $ANDROID_SDK_ROOT/ndk | tail -n 1)
+             if [ -d "$ANDROID_SDK_ROOT/ndk" ]; then
+                export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/$(ls -1 $ANDROID_SDK_ROOT/ndk | tail -n 1)
+             else
+                echo "ERROR: NDK not found in $ANDROID_SDK_ROOT/ndk"
+                exit 1
+             fi
           fi
           ./build-scripts/build-singbox.sh
 

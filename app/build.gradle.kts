@@ -58,7 +58,7 @@ android {
     
     sourceSets {
         getByName("main") {
-            jniLibs.srcDirs("../../prebuilt")
+            jniLibs.srcDirs("../prebuilt")
         }
     }
 }
