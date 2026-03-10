@@ -77,6 +77,25 @@ To build the native components, you must have **Go** and the **Android NDK** con
 3. Open the `AegisNet/` root folder in **Android Studio**.
 4. Sync Gradle and run the Application on an Emulator or Physical Device.
 
+## Continuous Integration (CI/CD)
+
+AegisNet ships with a pre-configured GitHub Actions pipeline (`.github/workflows/android-build.yml`) ensuring deterministic releases.
+
+**Trigger Events**:
+- Commits and Pull Requests against the `main` branch.
+- Creating and pushing a Git Tag (e.g. `v1.0.0`).
+- Manual `workflow_dispatch` executions.
+
+**Pipeline Flow**:
+1. Checks out the repository and synchronizes the underlying `core/sing-box` Git Submodule.
+2. Installs **JDK 17**, **Go 1.21**, and the **Android NDK** dependencies automatically.
+3. Triggers `build-singbox.sh` natively emitting the respective CPU architecture `.so` packages.
+4. Uses Gradle to `assembleRelease` generating an unsigned Production APK.
+5. Archives the `.apk` as an uploadable GitHub Artifact (`AegisNet-APK`) for 7 days.
+6. **Automatic Releases**: If the pipeline triggered from a Version Tag (`v1.0.0`), it will automatically publish a GitHub Release binding the APK to the tag identically alongside the generated Release Notes.
+
+*To activate release attachments*, navigate to your repository **Settings > Actions > General > Workflow permissions** and select **Read and write permissions**.
+
 ## Configuration System
 
 AegisNet utilizes a dynamic `ConfigGenerator` responding to state mutations natively.
