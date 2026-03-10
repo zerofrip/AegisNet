@@ -40,7 +40,7 @@ jobs:
           ./build-scripts/build-singbox.sh
 
       - name: Upload Native C-Shared Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: singbox-native-libs
           path: prebuilt/

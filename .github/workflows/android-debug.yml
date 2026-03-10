@@ -66,7 +66,7 @@ jobs:
           echo "apk_path=app/build/outputs/apk/debug/${{ steps.versioning.outputs.artifact_name }}" >> $GITHUB_OUTPUT
 
       - name: Upload Debug APK Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: AegisNet-debug-apk
           path: ${{ steps.apk-path.outputs.apk_path }}
