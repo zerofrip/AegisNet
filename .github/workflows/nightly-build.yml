@@ -47,8 +47,10 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Build Debug APK
-        run: gradle assembleDebug
+      - name: Build Nightly Debug APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Generate Nightly Version Name
         id: versioning

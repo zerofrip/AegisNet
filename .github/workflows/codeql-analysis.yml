@@ -41,14 +41,14 @@ jobs:
         languages: ${{ matrix.language }}
 
     # CodeQL requires the C++ / Java projects to compile to track taint properly through autobuild
-    - name: Build Project
+    - name: Build project
       run: |
         chmod +x build-scripts/build-singbox.sh
-        # CodeQL needs standard environment wrappers
         export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/$(ls -1 $ANDROID_SDK_ROOT/ndk | tail -n 1)
-        ./build-scripts/build-singbox.sh || true
-        ./gradlew assembleDebug || true
-
+        ./build-scripts/build-singbox.sh
+        chmod +x gradlew
+        ./gradlew assembleDebug -x test
+    
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
       with:
