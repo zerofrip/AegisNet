@@ -18,6 +18,12 @@ import com.aegisnet.ui.settings.LogsScreen
 import com.aegisnet.ui.settings.SettingsScreen
 import com.aegisnet.ui.whitelist.WhitelistListsScreen
 import com.aegisnet.ui.wireguard.WireGuardSettingsScreen
+import com.aegisnet.ui.firewall.AppsScreen
+import com.aegisnet.ui.firewall.AppDetailScreen
+import com.aegisnet.ui.firewall.DomainRuleEditor
+import com.aegisnet.ui.firewall.ConnectionLogScreen
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 
 @Composable
 fun AegisNavGraph() {
@@ -26,6 +32,7 @@ fun AegisNavGraph() {
     NavHost(navController = navController, startDestination = "dashboard") {
         composable("dashboard") {
             DashboardScreen(
+                onNavigateToApps = { navController.navigate("apps") },
                 onNavigateToDns = { navController.navigate("dns") },
                 onNavigateToFilters = { navController.navigate("filters") },
                 onNavigateToWhitelist = { navController.navigate("whitelist") },
@@ -59,6 +66,44 @@ fun AegisNavGraph() {
         }
         composable("logs") {
             LogsScreen(onNavigateBack = { navController.popBackStack() })
+        }
+        composable("apps") {
+            AppsScreen(
+                onNavigateToAppDetail = { uid -> navController.navigate("app_detail/$uid") },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable(
+            route = "app_detail/{uid}",
+            arguments = listOf(navArgument("uid") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val uid = backStackEntry.arguments?.getInt("uid") ?: return@composable
+            AppDetailScreen(
+                appUid = uid,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToDomainRules = { u -> navController.navigate("domain_rules/$u") },
+                onNavigateToConnectionLogs = { u -> navController.navigate("connection_logs/$u") }
+            )
+        }
+        composable(
+            route = "domain_rules/{uid}",
+            arguments = listOf(navArgument("uid") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val uid = backStackEntry.arguments?.getInt("uid") ?: return@composable
+            DomainRuleEditor(
+                appUid = uid,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable(
+            route = "connection_logs/{uid}",
+            arguments = listOf(navArgument("uid") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val uid = backStackEntry.arguments?.getInt("uid") ?: return@composable
+            ConnectionLogScreen(
+                appUid = uid,
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }

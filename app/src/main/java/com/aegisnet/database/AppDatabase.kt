@@ -2,20 +2,8 @@ package com.aegisnet.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import com.aegisnet.database.dao.DnsProfileDao
-import com.aegisnet.database.dao.FilterListDao
-import com.aegisnet.database.dao.UserRuleDao
-import com.aegisnet.database.dao.WhitelistListDao
-import com.aegisnet.database.dao.WhitelistRuleDao
-import com.aegisnet.database.dao.RoutingRuleDao
-import com.aegisnet.database.dao.WgProfileDao
-import com.aegisnet.database.entity.DnsProfile
-import com.aegisnet.database.entity.FilterList
-import com.aegisnet.database.entity.UserRule
-import com.aegisnet.database.entity.WhitelistList
-import com.aegisnet.database.entity.WhitelistRule
-import com.aegisnet.database.entity.RoutingRule
-import com.aegisnet.database.entity.WgProfile
+import com.aegisnet.database.dao.*
+import com.aegisnet.database.entity.*
 
 @Database(
     entities = [
@@ -25,9 +13,15 @@ import com.aegisnet.database.entity.WgProfile
         WhitelistList::class,
         WhitelistRule::class,
         RoutingRule::class,
-        WgProfile::class
+        WgProfile::class,
+        AppInfo::class,
+        AppDomainRule::class,
+        AppDNSRule::class,
+        AppRoutingRule::class,
+        TrafficStats::class,
+        ConnectionLog::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class AegisDatabase : RoomDatabase() {
@@ -38,4 +32,11 @@ abstract class AegisDatabase : RoomDatabase() {
     abstract fun whitelistRuleDao(): WhitelistRuleDao
     abstract fun routingRuleDao(): RoutingRuleDao
     abstract fun wgProfileDao(): WgProfileDao
+    
+    abstract fun appInfoDao(): AppInfoDao
+    abstract fun appDomainRuleDao(): AppDomainRuleDao
+    abstract fun appDNSRuleDao(): AppDNSRuleDao
+    abstract fun appRoutingRuleDao(): AppRoutingRuleDao
+    abstract fun trafficStatsDao(): TrafficStatsDao
+    abstract fun connectionLogDao(): ConnectionLogDao
 }

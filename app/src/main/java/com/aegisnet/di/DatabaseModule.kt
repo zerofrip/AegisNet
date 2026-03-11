@@ -2,7 +2,7 @@ package com.aegisnet.di
 
 import android.content.Context
 import androidx.room.Room
-import com.aegisnet.database.AppDatabase
+import com.aegisnet.database.AegisDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -16,32 +16,51 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideAegisDatabase(@ApplicationContext context: Context): AppDatabase {
+    fun provideAegisDatabase(@ApplicationContext context: Context): AegisDatabase {
         return Room.databaseBuilder(
             context,
-            AppDatabase::class.java,
+            AegisDatabase::class.java,
             "aegis_database"
         ).fallbackToDestructiveMigration().build()
     }
 
     @Provides
-    fun provideDnsProfileDao(database: AppDatabase) = database.dnsProfileDao()
+    fun provideDnsProfileDao(database: AegisDatabase) = database.dnsProfileDao()
 
     @Provides
-    fun provideFilterListDao(database: AppDatabase) = database.filterListDao()
+    fun provideFilterListDao(database: AegisDatabase) = database.filterListDao()
 
     @Provides
-    fun provideUserRuleDao(database: AppDatabase) = database.userRuleDao()
+    fun provideUserRuleDao(database: AegisDatabase) = database.userRuleDao()
 
     @Provides
-    fun provideWhitelistListDao(database: AppDatabase) = database.whitelistListDao()
+    fun provideWhitelistListDao(database: AegisDatabase) = database.whitelistListDao()
 
     @Provides
-    fun provideWhitelistRuleDao(database: AppDatabase) = database.whitelistRuleDao()
+    fun provideWhitelistRuleDao(database: AegisDatabase) = database.whitelistRuleDao()
 
     @Provides
-    fun provideRoutingRuleDao(database: AppDatabase) = database.routingRuleDao()
+    fun provideRoutingRuleDao(database: AegisDatabase) = database.routingRuleDao()
 
     @Provides
-    fun provideWgProfileDao(database: AppDatabase) = database.wgProfileDao()
+    fun provideWgProfileDao(database: AegisDatabase) = database.wgProfileDao()
+    
+    @Provides
+    fun provideAppInfoDao(database: AegisDatabase) = database.appInfoDao()
+
+    @Provides
+    fun provideAppDomainRuleDao(database: AegisDatabase) = database.appDomainRuleDao()
+
+    @Provides
+    fun provideAppDNSRuleDao(database: AegisDatabase) = database.appDNSRuleDao()
+
+    @Provides
+    fun provideAppRoutingRuleDao(database: AegisDatabase) = database.appRoutingRuleDao()
+
+    @Provides
+    fun provideTrafficStatsDao(database: AegisDatabase) = database.trafficStatsDao()
+
+    @Provides
+    fun provideConnectionLogDao(database: AegisDatabase) = database.connectionLogDao()
 }
+

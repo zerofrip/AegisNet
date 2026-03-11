@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.ParcelFileDescriptor
 import androidx.core.app.NotificationCompat
 import com.aegisnet.singbox.SingBoxManager
+import com.aegisnet.firewall.engine.AppFirewallEngineFacade
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -19,6 +20,9 @@ class AegisVpnService : VpnService() {
 
     @Inject
     lateinit var singBoxManager: SingBoxManager
+
+    @Inject
+    lateinit var firewallEngine: AppFirewallEngineFacade
 
     private var vpnInterface: ParcelFileDescriptor? = null
     
@@ -72,9 +76,25 @@ class AegisVpnService : VpnService() {
             .addRoute("0.0.0.0", 0)
             .addRoute("::", 0)
 
-        // TODO: Implement per-app proxy based on firewall rules
+        // Apply per-app proxy based on firewall rules
+        val bypassedApps = firewallEngine.getBypassedApps()
+        val blockedApps = firewallEngine.getBlockedApps()
         
-        vpnInterface = builder.establish()
+        bypassedApps.forEach { packageName ->
+            try {
+                builder.addDisallowedApplication(packageName)
+            } catch (e: PackageManager.NameNotFoundException) {
+                // App uninstalled
+            }
+        }
+        
+        // We let blocked apps through the TUN so the AppFirewallEngine can log their attempts before dropping them
+        
+        try {
+            vpnInterface = builder.establish()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     // generateSingboxConfig() logic has been moved inside SingBoxManager -> ConfigGenerator

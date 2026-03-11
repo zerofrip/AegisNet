@@ -19,8 +19,10 @@ import com.aegisnet.vpn.AegisVpnService
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
+    onNavigateToApps: () -> Unit,
     onNavigateToDns: () -> Unit,
     onNavigateToFilters: () -> Unit,
+
     onNavigateToWhitelist: () -> Unit,
     onNavigateToRouting: () -> Unit,
     onNavigateToWireGuard: () -> Unit,
@@ -109,6 +111,9 @@ fun DashboardScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Navigation Buttons
+            Button(onClick = onNavigateToApps, modifier = Modifier.fillMaxWidth()) {
+                Text("App Firewall")
+            }
             Button(onClick = onNavigateToDns, modifier = Modifier.fillMaxWidth()) {
                 Text("DNS Settings")
             }
