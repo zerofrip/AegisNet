@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -46,29 +45,27 @@ class SingBoxManager @Inject constructor(
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 Log.i("SingBoxManager", "Assembling UserSettings snapshot...")
-                val settings = runBlocking {
-                    val dnsProfiles = dnsManager.getActiveDnsProfiles()
-                    val filterLists = filterListDao.getAll().first()
-                    val whitelistLists = whitelistListDao.getAll().first()
-                    val userRules = filterManager.getActiveBlockDomains()
-                    val whitelistDomains = whitelistManager.getActiveWhitelistDomains()
-                    val wgProfiles = wireGuardManager.getAllProfiles()
-                    val activeWg = wgProfiles.find { it.isActive }
-                    val routingRules = smartRoutingEngine.getActiveRules()
-                    
-                    UserSettings(
-                        dnsServers = dnsProfiles,
-                        fakeDnsEnabled = true,
-                        filterLists = filterLists,
-                        whitelistLists = whitelistLists,
-                        userFilters = userRules,
-                        whitelistDomains = whitelistDomains,
-                        blockQuic = true,
-                        wireGuardProfiles = wgProfiles,
-                        activeWireGuardProfile = activeWg,
-                        smartRoutingRules = routingRules
-                    )
-                }
+                val dnsProfiles = dnsManager.getActiveDnsProfiles()
+                val filterLists = filterListDao.getAll().first()
+                val whitelistLists = whitelistListDao.getAll().first()
+                val userRules = filterManager.getActiveBlockDomains()
+                val whitelistDomains = whitelistManager.getActiveWhitelistDomains()
+                val wgProfiles = wireGuardManager.getAllProfiles()
+                val activeWg = wgProfiles.find { it.isActive }
+                val routingRules = smartRoutingEngine.getActiveRules()
+
+                val settings = UserSettings(
+                    dnsServers = dnsProfiles,
+                    fakeDnsEnabled = true,
+                    filterLists = filterLists,
+                    whitelistLists = whitelistLists,
+                    userFilters = userRules,
+                    whitelistDomains = whitelistDomains,
+                    blockQuic = true,
+                    wireGuardProfiles = wgProfiles,
+                    activeWireGuardProfile = activeWg,
+                    smartRoutingRules = routingRules
+                )
 
                 Log.i("SingBoxManager", "Generating config...")
                 val configJson = configGenerator.build(settings)

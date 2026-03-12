@@ -41,6 +41,8 @@ fun DashboardScreen(
     ) { result ->
         if (result.resultCode == android.app.Activity.RESULT_OK) {
             startVpnService(context)
+        } else {
+            viewModel.onConnectCancelled()
         }
     }
 
@@ -72,23 +74,36 @@ fun DashboardScreen(
                         color = if (state.isVpnActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = {
-                        if (state.isVpnActive) {
-                            stopVpnService(context)
-                        } else {
-                            val intent = VpnService.prepare(context)
-                            if (intent != null) {
-                                vpnServiceLauncher.launch(intent)
-                            } else {
-                                startVpnService(context)
-                            }
+                    if (state.isConnecting) {
+                        CircularProgressIndicator(modifier = Modifier.size(48.dp))
+                    } else {
+                        Button(
+                            onClick = {
+                                if (state.isVpnActive) {
+                                    viewModel.onDisconnectPressed()
+                                    stopVpnService(context)
+                                } else {
+                                    val intent = VpnService.prepare(context)
+                                    if (intent != null) {
+                                        viewModel.onConnectPressed()
+                                        vpnServiceLauncher.launch(intent)
+                                    } else {
+                                        viewModel.onConnectPressed()
+                                        startVpnService(context)
+                                    }
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (state.isVpnActive) MaterialTheme.colorScheme.error
+                                                else MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Text(if (state.isVpnActive) "Disconnect" else "Connect")
                         }
-                    }) {
-                        Text(if (state.isVpnActive) "Disconnect" else "Connect")
                     }
                     
                     Spacer(modifier = Modifier.height(16.dp))
-                    Divider()
+                    HorizontalDivider()
                     Spacer(modifier = Modifier.height(8.dp))
                     
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

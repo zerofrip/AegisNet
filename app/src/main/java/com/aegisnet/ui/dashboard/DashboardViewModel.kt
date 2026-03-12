@@ -14,6 +14,7 @@ import javax.inject.Inject
 
 data class DashboardState(
     val isVpnActive: Boolean = false,
+    val isConnecting: Boolean = false,
     val txBytes: Long = 0,
     val rxBytes: Long = 0,
     val blockedCount: Long = 0,
@@ -33,24 +34,46 @@ class DashboardViewModel @Inject constructor(
     val state = _state.asStateFlow()
 
     init {
-        startStatsUpdate()
+        observeVpnState()
+        pollTrafficStats()
         observeActiveSettings()
     }
 
-    private fun startStatsUpdate() {
+    fun onConnectPressed() {
+        _state.update { it.copy(isConnecting = true) }
+    }
+
+    fun onDisconnectPressed() {
+        _state.update { it.copy(isConnecting = true) }
+    }
+
+    fun onConnectCancelled() {
+        _state.update { it.copy(isConnecting = false) }
+    }
+
+    private fun observeVpnState() {
+        viewModelScope.launch {
+            singBoxManager.isRunningState.collect { isRunning ->
+                _state.update { it.copy(isVpnActive = isRunning, isConnecting = false) }
+            }
+        }
+    }
+
+    private fun pollTrafficStats() {
         viewModelScope.launch {
             while (true) {
                 if (singBoxManager.isRunning()) {
-                    val stats = singBoxController.getTrafficStats()
-                    val blocked = singBoxController.getBlockedCount()
-                    _state.update { it.copy(
-                        isVpnActive = true,
-                        txBytes = stats.getOrElse(0) { 0L },
-                        rxBytes = stats.getOrElse(1) { 0L },
-                        blockedCount = blocked
-                    ) }
-                } else {
-                    _state.update { it.copy(isVpnActive = false) }
+                    try {
+                        val stats = singBoxController.getTrafficStats()
+                        val blocked = singBoxController.getBlockedCount()
+                        _state.update {
+                            it.copy(
+                                txBytes = stats.getOrElse(0) { 0L },
+                                rxBytes = stats.getOrElse(1) { 0L },
+                                blockedCount = blocked
+                            )
+                        }
+                    } catch (_: Exception) { }
                 }
                 delay(1000)
             }
