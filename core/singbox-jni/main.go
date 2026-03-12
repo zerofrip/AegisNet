@@ -4,6 +4,18 @@ package main
 #include <jni.h>
 #include <stdlib.h>
 #include <string.h>
+
+static jstring newStringUTF(JNIEnv *env, const char *bytes) {
+    return (*env)->NewStringUTF(env, bytes);
+}
+
+static jlongArray newLongArray(JNIEnv *env, jsize len) {
+    return (*env)->NewLongArray(env, len);
+}
+
+static void setLongArrayRegion(JNIEnv *env, jlongArray array, jsize start, jsize len, const jlong *buf) {
+    (*env)->SetLongArrayRegion(env, array, start, len, buf);
+}
 */
 import "C"
 
@@ -18,7 +30,7 @@ func Java_com_aegisnet_singbox_SingBoxController_startSingBox(env *C.JNIEnv, cla
 	// err := box.Setup(configStr, "", "", int32(fd))
     // if err != nil { return C.NewStringUTF(env, C.CString(err.Error())) }
 
-	return C.NewStringUTF(env, C.CString(""))
+	return C.newStringUTF(env, C.CString(""))
 }
 
 //export Java_com_aegisnet_singbox_SingBoxController_stopSingBox
@@ -31,8 +43,8 @@ func Java_com_aegisnet_singbox_SingBoxController_getTrafficStats(env *C.JNIEnv, 
     // Return theoretical Tx/Rx bytes. In production, this pulls from sing-box metrics.
     stats := []int64{1024 * 1024, 2048 * 1024} // 1MB Tx, 2MB Rx
     
-    jArray := C.NewLongArray(env, C.jsize(len(stats)))
-    C.SetLongArrayRegion(env, jArray, 0, C.jsize(len(stats)), (*C.jlong)(&stats[0]))
+    jArray := C.newLongArray(env, C.jsize(len(stats)))
+    C.setLongArrayRegion(env, jArray, 0, C.jsize(len(stats)), (*C.jlong)(&stats[0]))
     return jArray
 }
 
