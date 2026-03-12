@@ -63,7 +63,7 @@ fun WhitelistListsScreen(
                         lastUpdated = item.lastUpdated,
                         isEnabled = item.isEnabled,
                         onToggle = { enabled -> viewModel.toggleList(item, enabled) },
-                        onUpdate = { /* Manual update trigger stub */ },
+                        onUpdate = { viewModel.triggerUpdate(item) },
                         onDelete = { viewModel.deleteList(item) }
                     )
                 }

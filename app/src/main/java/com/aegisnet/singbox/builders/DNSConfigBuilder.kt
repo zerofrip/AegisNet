@@ -1,6 +1,7 @@
 package com.aegisnet.singbox.builders
 
 import com.aegisnet.singbox.model.UserSettings
+import com.aegisnet.database.entity.WgProfile
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -28,6 +29,13 @@ object DNSConfigBuilder {
             })
         }
         
+        // Add a fallback DNS server via direct to resolve WG endpoint
+        dnsServers.put(JSONObject().apply {
+            put("tag", "dns-fallback")
+            put("address", "8.8.8.8")
+            put("detour", "direct")
+        })
+
         if (settings.dnsServers.isEmpty()) {
             // Fallback DNS (DoH)
             dnsServers.put(JSONObject().apply {
@@ -40,7 +48,16 @@ object DNSConfigBuilder {
         return JSONObject().apply {
             put("servers", dnsServers)
             val dnsRules = JSONArray()
-            // Forward queries to standard DNS except custom rules if any.
+            // Rule: WireGuard endpoint domain should be resolved via direct DNS
+            settings.activeWireGuardProfile?.let { wg ->
+                val endpointHost = wg.endpoint.substringBeforeLast(":")
+                if (endpointHost.isNotEmpty() && !endpointHost.matches(Regex("^[0-9.]+$"))) {
+                    dnsRules.put(JSONObject().apply {
+                        put("domain", JSONArray().apply { put(endpointHost as Any) })
+                        put("server", "dns-fallback")
+                    })
+                }
+            }
             put("rules", dnsRules)
             
             if (settings.fakeDnsEnabled) {

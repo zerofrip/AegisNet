@@ -11,7 +11,9 @@ import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import androidx.core.app.NotificationCompat
+import android.util.Log
 import com.aegisnet.singbox.SingBoxManager
+import com.aegisnet.singbox.SingBoxController
 import com.aegisnet.firewall.engine.AppFirewallEngineFacade
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -25,6 +27,9 @@ class AegisVpnService : VpnService() {
     @Inject
     lateinit var firewallEngine: AppFirewallEngineFacade
 
+    @Inject
+    lateinit var singBoxController: SingBoxController
+
     private var vpnInterface: ParcelFileDescriptor? = null
     
     companion object {
@@ -35,13 +40,28 @@ class AegisVpnService : VpnService() {
         private const val NOTIFICATION_ID = 1
     }
 
+    override fun onCreate() {
+        super.onCreate()
+        Log.i("AegisVpnService", "Service created")
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START -> startVpn()
-            ACTION_STOP -> stopVpn()
+            ACTION_START -> {
+                Log.i("AegisVpnService", "Received ACTION_START")
+                startVpn()
+            }
+            ACTION_STOP -> {
+                Log.i("AegisVpnService", "Received ACTION_STOP")
+                stopVpn()
+            }
             ACTION_UPDATE_ROUTES -> {
+                Log.i("AegisVpnService", "Received ACTION_UPDATE_ROUTES")
                 if (singBoxManager.isRunning()) {
                     setupVpnInterface()
+                    vpnInterface?.let {
+                        singBoxManager.start(it.fd)
+                    }
                 }
             }
         }
@@ -49,8 +69,11 @@ class AegisVpnService : VpnService() {
     }
 
     private fun startVpn() {
+        Log.i("AegisVpnService", "Attempting to start VPN")
         if (singBoxManager.isRunning()) return
 
+        singBoxController.setVpnService(this) // Set service for socket protection callback
+        
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification())
 
@@ -58,6 +81,7 @@ class AegisVpnService : VpnService() {
         
         // Pass the file descriptor to the top-level Manager handling JNI and ConfigGenerator
         vpnInterface?.let {
+            Log.i("AegisVpnService", "Starting sing-box with FD: ${it.fd}")
             singBoxManager.start(it.fd)
         }
     }
@@ -78,8 +102,8 @@ class AegisVpnService : VpnService() {
         val builder = Builder()
             .setSession("AegisNet")
             .setMtu(1500)
-            .addAddress("172.19.0.1", 30) // IPv4
-            .addAddress("fdfe:dcba:9876::1", 126) // IPv6
+            .addAddress("172.19.0.1", 24) // IPv4
+            .addAddress("fdfe:dcba:9876::1", 64) // IPv6
             .addRoute("0.0.0.0", 0)
             .addRoute("::", 0)
 

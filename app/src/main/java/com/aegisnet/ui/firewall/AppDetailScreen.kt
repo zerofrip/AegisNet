@@ -54,7 +54,7 @@ fun AppDetailScreen(
             }
 
             // Routing Mode
-            var selectedMode by remember { mutableStateOf(routingRule?.routeMode ?: "WIREGUARD") }
+            var selectedMode by remember(routingRule) { mutableStateOf(routingRule?.routeMode ?: "WIREGUARD") }
             Text("Routing Mode", style = MaterialTheme.typography.titleMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("DIRECT", "WIREGUARD", "BLOCK", "BYPASS").forEach { mode ->
@@ -70,7 +70,7 @@ fun AppDetailScreen(
             }
 
             // Toggles
-            var blockQuic by remember { mutableStateOf(routingRule?.blockQuic ?: false) }
+            var blockQuic by remember(routingRule) { mutableStateOf(routingRule?.blockQuic ?: false) }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween

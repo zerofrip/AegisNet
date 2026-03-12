@@ -40,8 +40,7 @@ class ConfigGenerator @Inject constructor(
         root.put("inbounds", InboundBuilder.build())
 
         // 4. Outbounds
-        val activeWg = settings.wireGuardProfiles.find { it.name == settings.activeWireGuardProfile } // Simplified active profile locate
-        root.put("outbounds", OutboundBuilder.build(activeWg))
+        root.put("outbounds", OutboundBuilder.build(settings.activeWireGuardProfile))
 
         // 5. Routing (Including HTTP filters, Whitelists & Blocks dynamically built through the Filter Engine in reality, but here we construct mapping arrays)
         root.put("route", RoutingConfigBuilder.build(settings))

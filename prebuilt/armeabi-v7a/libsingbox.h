@@ -24,6 +24,19 @@ typedef struct { const char *p; ptrdiff_t n; } _GoString_;
 #include <jni.h>
 #include <stdlib.h>
 #include <string.h>
+#include <android/log.h>
+
+#define LOG_TAG "AegisSingBox"
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
+static void log_info(const char* msg) {
+    __android_log_print(ANDROID_LOG_INFO, LOG_TAG, "%s", msg);
+}
+
+static void log_error(const char* msg) {
+    __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, "%s", msg);
+}
 
 static const char* getStringUTF(JNIEnv *env, jstring str) {
     return (*env)->GetStringUTFChars(env, str, NULL);
@@ -39,6 +52,58 @@ static jlongArray newLongArray(JNIEnv *env, jsize len) {
 
 static void setLongArrayRegion(JNIEnv *env, jlongArray array, jsize start, jsize len, const jlong *buf) {
     (*env)->SetLongArrayRegion(env, array, start, len, buf);
+}
+
+static jmethodID getMethodID(JNIEnv *env, jclass clazz, const char *name, const char *sig) {
+    return (*env)->GetMethodID(env, clazz, name, sig);
+}
+
+static jboolean callBooleanMethod(JNIEnv *env, jobject obj, jmethodID methodID, jint arg) {
+    return (*env)->CallBooleanMethod(env, obj, methodID, arg);
+}
+
+static void deleteGlobalRef(JNIEnv *env, jobject obj) {
+    (*env)->DeleteGlobalRef(env, obj);
+}
+
+static jobject newGlobalRef(JNIEnv *env, jobject obj) {
+    return (*env)->NewGlobalRef(env, obj);
+}
+
+static jclass getObjectClass(JNIEnv *env, jobject obj) {
+    return (*env)->GetObjectClass(env, obj);
+}
+
+static JavaVM* getJavaVM(JNIEnv *env) {
+    JavaVM *vm;
+    (*env)->GetJavaVM(env, &vm);
+    return vm;
+}
+
+static JNIEnv* getEnv(JavaVM *vm) {
+    JNIEnv *env;
+    if ((*vm)->GetEnv(vm, (void**)&env, JNI_VERSION_1_6) != JNI_OK) {
+        return NULL;
+    }
+    return env;
+}
+
+static JNIEnv* attachCurrentThread(JavaVM *vm) {
+    JNIEnv *env;
+    (*vm)->AttachCurrentThread(vm, &env, NULL);
+    return env;
+}
+
+static void detachCurrentThread(JavaVM *vm) {
+    (*vm)->DetachCurrentThread(vm);
+}
+
+static jboolean isNull(jobject obj) {
+    return obj == NULL;
+}
+
+static jboolean isMethodNull(jmethodID method) {
+    return method == NULL;
 }
 
 #line 1 "cgo-generated-wrapper"

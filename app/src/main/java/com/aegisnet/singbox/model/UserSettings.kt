@@ -18,6 +18,6 @@ data class UserSettings(
     val userFilters: List<String>,
     val blockQuic: Boolean,
     val wireGuardProfiles: List<WgProfile>,
-    val activeWireGuardProfile: String?, // Endpoint Name or UUID identifier
+    val activeWireGuardProfile: WgProfile?, // Encapsulated Profile object
     val smartRoutingRules: List<RoutingRule>
 )

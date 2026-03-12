@@ -17,35 +17,70 @@ interface PacketParser {
     fun parse(packet: ByteArray, length: Int): PacketInfo?
 }
 
-// Basic stub implementation
 class SimplePacketParser : PacketParser {
     override fun parse(packet: ByteArray, length: Int): PacketInfo? {
-        if (length < 20) return null // IPv4 header size
-        
+        if (length < 1) return null
         val version = (packet[0].toInt() shr 4) and 0x0F
-        if (version == 4) {
-             val protocol = packet[9].toInt() and 0xFF
-             // IP addresses are simplified for the stub
-             val destIpBytes = packet.copyOfRange(16, 20)
-             val destIp = "${destIpBytes[0].toInt() and 0xFF}.${destIpBytes[1].toInt() and 0xFF}.${destIpBytes[2].toInt() and 0xFF}.${destIpBytes[3].toInt() and 0xFF}"
-             
-             // Extract ports based on protocol
-             var destPort = 0
-             val headerLen = (packet[0].toInt() and 0x0F) * 4
-             if (protocol == 6 && length >= headerLen + 4) { // TCP
-                 destPort = ((packet[headerLen + 2].toInt() and 0xFF) shl 8) or (packet[headerLen + 3].toInt() and 0xFF)
-             } else if (protocol == 17 && length >= headerLen + 4) { // UDP
-                 destPort = ((packet[headerLen + 2].toInt() and 0xFF) shl 8) or (packet[headerLen + 3].toInt() and 0xFF)
-             }
-             
-             val payloadStart = headerLen + if (protocol == 6) 20 else 8 // Simplified TCP/UDP header length
-             var payload: ByteArray? = null
-             if (length > payloadStart) {
-                 payload = packet.copyOfRange(payloadStart, length)
-             }
-             
-             return PacketInfo(protocol, "127.0.0.1", 12345, destIp, destPort, (length - headerLen).toLong(), payload)
+        return when (version) {
+            4 -> parseIPv4(packet, length)
+            6 -> parseIPv6(packet, length)
+            else -> null
         }
-        return null // IPv6 ignored for stub
+    }
+
+    private fun parseIPv4(packet: ByteArray, length: Int): PacketInfo? {
+        if (length < 20) return null
+        val headerLen = (packet[0].toInt() and 0x0F) * 4
+        if (length < headerLen) return null
+
+        val protocol = packet[9].toInt() and 0xFF
+        val srcIp = formatIPv4(packet, 12)
+        val destIp = formatIPv4(packet, 16)
+        val (srcPort, destPort) = extractPorts(packet, length, headerLen, protocol)
+
+        val payloadStart = headerLen + transportHeaderSize(protocol)
+        val payload = if (length > payloadStart) packet.copyOfRange(payloadStart, length) else null
+        return PacketInfo(protocol, srcIp, srcPort, destIp, destPort, (length - headerLen).toLong(), payload)
+    }
+
+    private fun parseIPv6(packet: ByteArray, length: Int): PacketInfo? {
+        if (length < 40) return null // IPv6 fixed header is 40 bytes
+        val protocol = packet[6].toInt() and 0xFF
+        val srcIp = formatIPv6(packet, 8)
+        val destIp = formatIPv6(packet, 24)
+        val (srcPort, destPort) = extractPorts(packet, length, 40, protocol)
+
+        val payloadStart = 40 + transportHeaderSize(protocol)
+        val payload = if (length > payloadStart) packet.copyOfRange(payloadStart, length) else null
+        return PacketInfo(protocol, srcIp, srcPort, destIp, destPort, (length - 40).toLong(), payload)
+    }
+
+    private fun formatIPv4(packet: ByteArray, offset: Int): String {
+        return "${packet[offset].toInt() and 0xFF}.${packet[offset + 1].toInt() and 0xFF}" +
+               ".${packet[offset + 2].toInt() and 0xFF}.${packet[offset + 3].toInt() and 0xFF}"
+    }
+
+    private fun formatIPv6(packet: ByteArray, offset: Int): String {
+        return (0 until 8).joinToString(":") { i ->
+            val hi = packet[offset + i * 2].toInt() and 0xFF
+            val lo = packet[offset + i * 2 + 1].toInt() and 0xFF
+            "%02x%02x".format(hi, lo)
+        }
+    }
+
+    /** Returns (srcPort, destPort) for TCP/UDP; (0, 0) for other protocols. */
+    private fun extractPorts(packet: ByteArray, length: Int, transportOffset: Int, protocol: Int): Pair<Int, Int> {
+        if ((protocol == 6 || protocol == 17) && length >= transportOffset + 4) {
+            val src = ((packet[transportOffset].toInt() and 0xFF) shl 8) or (packet[transportOffset + 1].toInt() and 0xFF)
+            val dst = ((packet[transportOffset + 2].toInt() and 0xFF) shl 8) or (packet[transportOffset + 3].toInt() and 0xFF)
+            return src to dst
+        }
+        return 0 to 0
+    }
+
+    private fun transportHeaderSize(protocol: Int): Int = when (protocol) {
+        6 -> 20  // TCP minimum header
+        17 -> 8  // UDP header
+        else -> 0
     }
 }
