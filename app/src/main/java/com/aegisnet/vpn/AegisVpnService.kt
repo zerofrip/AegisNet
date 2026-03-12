@@ -30,6 +30,7 @@ class AegisVpnService : VpnService() {
     companion object {
         const val ACTION_START = "com.aegisnet.vpn.START"
         const val ACTION_STOP = "com.aegisnet.vpn.STOP"
+        const val ACTION_UPDATE_ROUTES = "com.aegisnet.vpn.UPDATE_ROUTES"
         private const val NOTIFICATION_CHANNEL_ID = "aegis_vpn_channel"
         private const val NOTIFICATION_ID = 1
     }
@@ -38,6 +39,11 @@ class AegisVpnService : VpnService() {
         when (intent?.action) {
             ACTION_START -> startVpn()
             ACTION_STOP -> stopVpn()
+            ACTION_UPDATE_ROUTES -> {
+                if (singBoxManager.isRunning()) {
+                    setupVpnInterface()
+                }
+            }
         }
         return START_STICKY
     }

@@ -16,13 +16,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import android.content.Context
+import android.content.Intent
+import com.aegisnet.vpn.AegisVpnService
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 @HiltViewModel
 class AppDetailViewModel @Inject constructor(
     private val appInfoDao: AppInfoDao,
     private val routingRuleDao: AppRoutingRuleDao,
     private val dnsRuleDao: AppDNSRuleDao,
-    private val trafficStatsDao: TrafficStatsDao
+    private val trafficStatsDao: TrafficStatsDao,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private var currentAppUid: Int = -1
@@ -64,6 +69,12 @@ class AppDetailViewModel @Inject constructor(
         viewModelScope.launch {
             val current = _routingRule.value ?: AppRoutingRule(currentAppUid, "WIREGUARD", false, false)
             routingRuleDao.insert(current.copy(routeMode = mode, bypassVpn = mode == "BYPASS"))
+            
+            // Trigger VPN Service route update
+            val intent = Intent(context, AegisVpnService::class.java).apply {
+                action = AegisVpnService.ACTION_UPDATE_ROUTES
+            }
+            context.startService(intent)
         }
     }
 
