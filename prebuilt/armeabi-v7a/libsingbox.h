@@ -25,6 +25,10 @@ typedef struct { const char *p; ptrdiff_t n; } _GoString_;
 #include <stdlib.h>
 #include <string.h>
 
+static const char* getStringUTF(JNIEnv *env, jstring str) {
+    return (*env)->GetStringUTFChars(env, str, NULL);
+}
+
 static jstring newStringUTF(JNIEnv *env, const char *bytes) {
     return (*env)->NewStringUTF(env, bytes);
 }
