@@ -95,18 +95,17 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"syscall"
 	"unsafe"
 
 	box "github.com/sagernet/sing-box"
 	"github.com/sagernet/sing-box/adapter"
+	"github.com/sagernet/sing-box/include"
 	"github.com/sagernet/sing-box/option"
+	tun "github.com/sagernet/sing-tun"
 	"github.com/sagernet/sing/common/json"
+	"github.com/sagernet/sing/common/logger"
 	"github.com/sagernet/sing/service"
-
-	_ "github.com/sagernet/sing-box/inbound"
-	_ "github.com/sagernet/sing-box/outbound"
-	_ "github.com/sagernet/sing-box/transport/shadowsocks"
-	_ "github.com/sagernet/sing-box/transport/v2ray"
 )
 
 var (
@@ -114,34 +113,28 @@ var (
 	javaVM            *C.JavaVM
 	javaControllerObj C.jobject
 	javaProtectMethod C.jmethodID
+	activeTunFd       int
 
 	blockedCount atomic.Int64
 )
 
-type platformInterface struct {
-	adapter.PlatformInterface
-}
+// platformInterface implements adapter.PlatformInterface for Android VpnService.
+type platformInterface struct{}
 
-func (p *platformInterface) UsePlatformInterface() bool {
-	return true
-}
+func (p *platformInterface) Initialize(_ adapter.NetworkManager) error { return nil }
 
-func (p *platformInterface) UsePlatformAutoDetectInterfaceControl() bool {
-	return true
-}
+func (p *platformInterface) UsePlatformAutoDetectInterfaceControl() bool { return true }
 
 func (p *platformInterface) AutoDetectInterfaceControl(fd int) error {
 	if javaVM == nil || C.isNull(javaControllerObj) != 0 || C.isMethodNull(javaProtectMethod) != 0 {
 		return nil
 	}
-
 	env := C.getEnv(javaVM)
 	detached := false
 	if env == nil {
 		env = C.attachCurrentThread(javaVM)
 		detached = true
 	}
-
 	res := C.callBooleanMethod(env, javaControllerObj, javaProtectMethod, C.jint(fd))
 	msg := C.CString(fmt.Sprintf("protected socket: fd=%d res=%v", fd, res != 0))
 	if res == 0 {
@@ -150,10 +143,55 @@ func (p *platformInterface) AutoDetectInterfaceControl(fd int) error {
 		C.log_info(msg)
 	}
 	C.free(unsafe.Pointer(msg))
-
 	if detached {
 		C.detachCurrentThread(javaVM)
 	}
+	return nil
+}
+
+func (p *platformInterface) UsePlatformInterface() bool { return true }
+
+// OpenInterface is called by sing-box when starting the TUN inbound.
+// It dups the Android VpnService TUN fd stored in activeTunFd.
+func (p *platformInterface) OpenInterface(opts *tun.Options, _ option.TunPlatformOptions) (tun.Tun, error) {
+	if activeTunFd <= 0 {
+		return nil, fmt.Errorf("no active TUN fd")
+	}
+	dupFd, err := syscall.Dup(activeTunFd)
+	if err != nil {
+		return nil, fmt.Errorf("dup TUN fd: %w", err)
+	}
+	opts.FileDescriptor = dupFd
+	if opts.Name == "" {
+		opts.Name = "vpntun0"
+	}
+	return tun.New(*opts)
+}
+
+func (p *platformInterface) UsePlatformDefaultInterfaceMonitor() bool { return false }
+func (p *platformInterface) CreateDefaultInterfaceMonitor(_ logger.Logger) tun.DefaultInterfaceMonitor {
+	return nil
+}
+func (p *platformInterface) UsePlatformNetworkInterfaces() bool                     { return false }
+func (p *platformInterface) NetworkInterfaces() ([]adapter.NetworkInterface, error) { return nil, nil }
+func (p *platformInterface) UnderNetworkExtension() bool                            { return false }
+func (p *platformInterface) NetworkExtensionIncludeAllNetworks() bool               { return false }
+func (p *platformInterface) ClearDNSCache()                                         {}
+func (p *platformInterface) RequestPermissionForWIFIState() error                   { return nil }
+func (p *platformInterface) ReadWIFIState() adapter.WIFIState                       { return adapter.WIFIState{} }
+func (p *platformInterface) SystemCertificates() []string                           { return nil }
+func (p *platformInterface) UsePlatformConnectionOwnerFinder() bool                 { return false }
+func (p *platformInterface) FindConnectionOwner(_ *adapter.FindConnectionOwnerRequest) (*adapter.ConnectionOwner, error) {
+	return nil, nil
+}
+func (p *platformInterface) UsePlatformWIFIMonitor() bool                   { return false }
+func (p *platformInterface) UsePlatformNotification() bool                  { return false }
+func (p *platformInterface) SendNotification(_ *adapter.Notification) error { return nil }
+func (p *platformInterface) UsePlatformNeighborResolver() bool              { return false }
+func (p *platformInterface) StartNeighborMonitor(_ adapter.NeighborUpdateListener) error {
+	return nil
+}
+func (p *platformInterface) CloseNeighborMonitor(_ adapter.NeighborUpdateListener) error {
 	return nil
 }
 
@@ -181,25 +219,14 @@ func Java_com_aegisnet_singbox_SingBoxController_startSingBox(env *C.JNIEnv, cla
 		C.free(unsafe.Pointer(msgE))
 	}
 
+	// Store TUN fd — used by OpenInterface() callback during instance.Start()
+	activeTunFd = int(fd)
+
 	// Parse the JSON into sing-box options
-	ctx := context.Background()
-	options, err := json.UnmarshalExtendedContext[option.Options](ctx, []byte(configStr))
+	baseCtx := context.Background()
+	options, err := json.UnmarshalExtendedContext[option.Options](baseCtx, []byte(configStr))
 	if err != nil {
 		return C.newStringUTF(env, C.CString("JSON Parse Error: "+err.Error()))
-	}
-
-	// Pass the TUN file descriptor to sing-box inbounds
-	for i := range options.Inbounds {
-		if options.Inbounds[i].Type == "tun" {
-			if tunOpts, ok := options.Inbounds[i].Options.(map[string]any); ok {
-				tunOpts["file_descriptor"] = int(fd)
-			} else {
-				m := map[string]any{"file_descriptor": int(fd)}
-				bb, _ := json.Marshal(options.Inbounds[i].Options)
-				json.Unmarshal(bb, &m)
-				options.Inbounds[i].Options = m
-			}
-		}
 	}
 
 	// Stop existing instance if any
@@ -211,7 +238,8 @@ func Java_com_aegisnet_singbox_SingBoxController_startSingBox(env *C.JNIEnv, cla
 		globalBox = nil
 	}
 
-	// Wrap platform interface for socket protection
+	// Register all protocol handlers and attach the platform interface
+	ctx := include.Context(baseCtx)
 	ctx = service.ContextWith[adapter.PlatformInterface](ctx, &platformInterface{})
 
 	instance, err := box.New(box.Options{

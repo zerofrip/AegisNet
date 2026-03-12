@@ -18,12 +18,27 @@ mkdir -p "$PREBUILT_DIR"
 
 cd "$JNI_DIR"
 
-# Initialize Go module and replace with local submodule if not configured
+# ── Go dependency resolution ────────────────────────────────────────────────
+
+# Ensure go.mod exists and the local sing-box replace directive is configured
 if [ ! -f go.mod ]; then
+    echo "Initializing Go module..."
     go mod init singbox-jni
-    go mod edit -replace github.com/sagernet/sing-box=../sing-box
-    go mod tidy
 fi
+
+# Always ensure the local replace directive points to ../sing-box
+if ! grep -q 'replace github.com/sagernet/sing-box' go.mod 2>/dev/null; then
+    echo "Adding local replace directive for sing-box..."
+    go mod edit -replace github.com/sagernet/sing-box=../sing-box
+fi
+
+echo "Resolving Go dependencies (go mod download)..."
+GOFLAGS="-mod=mod" go mod download
+
+echo "Tidying Go modules (go mod tidy)..."
+GOFLAGS="" go mod tidy
+
+# ── Build ────────────────────────────────────────────────────────────────────
 
 API=26
 HOST_TAG="linux-x86_64" # We assume linux for standard environments/Github Actions
