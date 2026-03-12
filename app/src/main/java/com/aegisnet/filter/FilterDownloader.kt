@@ -21,7 +21,7 @@ class FilterDownloader @Inject constructor() {
 
             client.newCall(request).execute().use { response ->
                 if (response.isSuccessful) {
-                    return@withContext response.body?.string()
+                    return@withContext response.body()?.string()
                 } else {
                     return@withContext null
                 }

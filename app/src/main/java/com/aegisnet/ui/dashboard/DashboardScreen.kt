@@ -39,7 +39,6 @@ fun DashboardScreen(
     ) { result ->
         if (result.resultCode == android.app.Activity.RESULT_OK) {
             startVpnService(context)
-            isVpnActive = true
         }
     }
 

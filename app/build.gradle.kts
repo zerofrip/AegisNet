@@ -100,5 +100,6 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
 
-    // Local modules
+    // Testing
+    testImplementation("junit:junit:4.13.2")
 }

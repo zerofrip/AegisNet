@@ -55,9 +55,9 @@ class TrafficLogger @Inject constructor(
     fun recordTraffic(uid: Int, uploadBytes: Long, downloadBytes: Long) {
         synchronized(statsLock) {
             val stats = statsBuffer.getOrPut(uid) { LongArray(3) }
-            stats[0] += uploadBytes
-            stats[1] += downloadBytes
-            stats[2] += 1 // Connection count
+            stats[0] = stats[0] + uploadBytes
+            stats[1] = stats[1] + downloadBytes
+            stats[2] = stats[2] + 1L // Connection count
         }
     }
 

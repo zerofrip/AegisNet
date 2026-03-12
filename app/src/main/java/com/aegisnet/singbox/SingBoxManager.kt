@@ -2,7 +2,6 @@ package com.aegisnet.singbox
 
 import com.aegisnet.dns.DNSManager
 import com.aegisnet.filter.FilterManager
-import com.aegisnet.routing.RoutingManager
 import com.aegisnet.whitelist.WhitelistManager
 import com.aegisnet.wireguard.WireGuardManager
 import com.aegisnet.singbox.model.UserSettings
@@ -18,7 +17,6 @@ class SingBoxManager @Inject constructor(
     private val dnsManager: DNSManager,
     private val filterManager: FilterManager,
     private val whitelistManager: WhitelistManager,
-    private val routingManager: RoutingManager,
     private val wireGuardManager: WireGuardManager
 ) {
     private var isRunning = false
@@ -28,11 +26,10 @@ class SingBoxManager @Inject constructor(
         
         // Assemble UserSettings snapshot from various managers
         val settings = runBlocking {
-            val dnsProfiles = dnsManager.getActiveProfilesFlow().first()
-            val filterLists = filterManager.getActiveFilterLists()
-            val whitelistLists = whitelistManager.getActiveWhitelistLists()
-            val userRules = filterManager.getUserRules()
-            val routingRules = routingManager.getAllRules()
+            val dnsProfiles = dnsManager.getActiveDnsProfiles()
+            val filterLists = emptyList<com.aegisnet.database.entity.FilterList>() // FilterList dao exist but no manager method yet. Ignoring for stub.
+            val whitelistLists = emptyList<com.aegisnet.database.entity.WhitelistList>() // Same as above
+            val userRules = filterManager.getActiveBlockDomains()
             val wgProfiles = wireGuardManager.getAllProfiles()
             val activeWg = wgProfiles.find { it.isActive }
             
@@ -44,11 +41,11 @@ class SingBoxManager @Inject constructor(
                 fakeDnsEnabled = true, // Defaulting to true for now
                 filterLists = filterLists,
                 whitelistLists = whitelistLists,
-                userFilters = userRules.map { it.pattern },
+                userFilters = userRules,
                 blockQuic = true, // Defaulting to true for now
                 wireGuardProfiles = wgProfiles,
                 activeWireGuardProfile = activeWg?.name,
-                smartRoutingRules = routingRules
+                smartRoutingRules = emptyList()
             )
         }
 

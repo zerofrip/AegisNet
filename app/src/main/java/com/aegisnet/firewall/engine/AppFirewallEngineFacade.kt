@@ -8,13 +8,15 @@ import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
 
+import dagger.hilt.android.qualifiers.ApplicationContext
+
 @Singleton
 class AppFirewallEngineFacade @Inject constructor(
     private val uidResolver: UIDResolver,
     private val routingDecisionEngine: RoutingDecisionEngine,
     private val trafficLogger: TrafficLogger,
     private val appRuleManager: AppRuleManager,
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
 
     fun processPacket(

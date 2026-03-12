@@ -3,7 +3,6 @@ package com.aegisnet.singbox
 import android.content.Context
 import com.aegisnet.dns.DNSManager
 import com.aegisnet.filter.FilterManager
-import com.aegisnet.routing.RoutingManager
 import com.aegisnet.whitelist.WhitelistManager
 import com.aegisnet.wireguard.WireGuardManager
 import com.aegisnet.singbox.builders.*
@@ -20,7 +19,6 @@ class ConfigGenerator @Inject constructor(
     private val dnsManager: DNSManager,
     private val filterManager: FilterManager,
     private val whitelistManager: WhitelistManager,
-    private val routingManager: RoutingManager,
     private val wireGuardManager: WireGuardManager
 ) {
     

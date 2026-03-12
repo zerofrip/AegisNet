@@ -45,8 +45,8 @@ class DashboardViewModel @Inject constructor(
                     val blocked = singBoxController.getBlockedCount()
                     _state.update { it.copy(
                         isVpnActive = true,
-                        txBytes = stats.getOrElse(0) { 0 },
-                        rxBytes = stats.getOrElse(1) { 0 },
+                        txBytes = stats.getOrElse(0) { 0L },
+                        rxBytes = stats.getOrElse(1) { 0L },
                         blockedCount = blocked
                     ) }
                 } else {
@@ -60,7 +60,7 @@ class DashboardViewModel @Inject constructor(
     private fun observeActiveSettings() {
         viewModelScope.launch {
             combine(
-                dnsManager.getActiveProfilesFlow(),
+                flow { emit(dnsManager.getActiveDnsProfiles()) },
                 flow { emit(wireGuardManager.getActiveProfile()) } // Simplification, ideally active profile should be a Flow
             ) { dns, wg ->
                 _state.update { it.copy(

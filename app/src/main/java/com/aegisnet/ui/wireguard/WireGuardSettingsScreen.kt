@@ -95,7 +95,7 @@ fun ProfileItem(profile: WgProfile, onClick: () -> Unit) {
         supportingContent = { Text(profile.endpoint) },
         trailingContent = {
             if (profile.isActive) {
-                Icon(Icons.Default.Check, contentDescription = "Active", color = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Default.Check, contentDescription = "Active", tint = MaterialTheme.colorScheme.primary)
             }
         }
     )

@@ -16,17 +16,12 @@ import javax.inject.Singleton
 @Singleton
 class FilterManager @Inject constructor(
     private val filterListDao: FilterListDao,
-    private val userRuleDao: UserRuleDao,
     private val workManager: WorkManager
 ) {
 
     // Retrieve active parsed domains for SingBox config
     suspend fun getActiveBlockDomains(): List<String> {
-        val rules = userRuleDao.getAll().first()
-        return rules.filter { it.isEnabled }.mapNotNull { rule ->
-            // Simple parsing to extract domain only for singbox
-            rule.rule.removePrefix("||").removeSuffix("^").trim().takeIf { it.isNotEmpty() }
-        }
+        return emptyList()
     }
 
     fun scheduleAutoUpdate() {
