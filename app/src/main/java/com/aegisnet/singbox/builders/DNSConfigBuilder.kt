@@ -45,9 +45,24 @@ object DNSConfigBuilder {
             })
         }
 
+        // Add a block DNS server for filter rules
+        dnsServers.put(JSONObject().apply {
+            put("tag", "dns-block")
+            put("address", "rcode://success")
+        })
+
         return JSONObject().apply {
             put("servers", dnsServers)
             val dnsRules = JSONArray()
+
+            // DNS-level domain blocking from user filter rules
+            if (settings.userFilters.isNotEmpty()) {
+                dnsRules.put(JSONObject().apply {
+                    put("domain", JSONArray(settings.userFilters))
+                    put("server", "dns-block")
+                })
+            }
+
             // Rule: WireGuard endpoint domain should be resolved via direct DNS
             settings.activeWireGuardProfile?.let { wg ->
                 val endpointHost = wg.endpoint.substringBeforeLast(":")

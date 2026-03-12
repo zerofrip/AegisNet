@@ -16,8 +16,9 @@ data class UserSettings(
     val filterLists: List<FilterList>,
     val whitelistLists: List<WhitelistList>,
     val userFilters: List<String>,
+    val whitelistDomains: List<String>,
     val blockQuic: Boolean,
     val wireGuardProfiles: List<WgProfile>,
-    val activeWireGuardProfile: WgProfile?, // Encapsulated Profile object
+    val activeWireGuardProfile: WgProfile?,
     val smartRoutingRules: List<RoutingRule>
 )

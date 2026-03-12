@@ -3,14 +3,18 @@ package com.aegisnet.singbox
 import android.util.Log
 import com.aegisnet.dns.DNSManager
 import com.aegisnet.filter.FilterManager
+import com.aegisnet.routing.SmartRoutingEngine
 import com.aegisnet.whitelist.WhitelistManager
 import com.aegisnet.wireguard.WireGuardManager
 import com.aegisnet.singbox.model.UserSettings
+import com.aegisnet.database.dao.FilterListDao
+import com.aegisnet.database.dao.WhitelistListDao
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
@@ -23,7 +27,10 @@ class SingBoxManager @Inject constructor(
     private val dnsManager: DNSManager,
     private val filterManager: FilterManager,
     private val whitelistManager: WhitelistManager,
-    private val wireGuardManager: WireGuardManager
+    private val wireGuardManager: WireGuardManager,
+    private val smartRoutingEngine: SmartRoutingEngine,
+    private val filterListDao: FilterListDao,
+    private val whitelistListDao: WhitelistListDao
 ) {
     private val _isRunning = MutableStateFlow(false)
     val isRunningState: StateFlow<Boolean> = _isRunning.asStateFlow()
@@ -41,11 +48,13 @@ class SingBoxManager @Inject constructor(
                 Log.i("SingBoxManager", "Assembling UserSettings snapshot...")
                 val settings = runBlocking {
                     val dnsProfiles = dnsManager.getActiveDnsProfiles()
-                    val filterLists = emptyList<com.aegisnet.database.entity.FilterList>() 
-                    val whitelistLists = emptyList<com.aegisnet.database.entity.WhitelistList>()
+                    val filterLists = filterListDao.getAll().first()
+                    val whitelistLists = whitelistListDao.getAll().first()
                     val userRules = filterManager.getActiveBlockDomains()
+                    val whitelistDomains = whitelistManager.getActiveWhitelistDomains()
                     val wgProfiles = wireGuardManager.getAllProfiles()
                     val activeWg = wgProfiles.find { it.isActive }
+                    val routingRules = smartRoutingEngine.getActiveRules()
                     
                     UserSettings(
                         dnsServers = dnsProfiles,
@@ -53,10 +62,11 @@ class SingBoxManager @Inject constructor(
                         filterLists = filterLists,
                         whitelistLists = whitelistLists,
                         userFilters = userRules,
-                        blockQuic = true, 
+                        whitelistDomains = whitelistDomains,
+                        blockQuic = true,
                         wireGuardProfiles = wgProfiles,
                         activeWireGuardProfile = activeWg,
-                        smartRoutingRules = emptyList()
+                        smartRoutingRules = routingRules
                     )
                 }
 

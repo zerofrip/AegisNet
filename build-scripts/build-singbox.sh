@@ -51,7 +51,7 @@ build_for_arch() {
     export CC="$TOOLCHAIN/$target$API-clang"
     export CXX="$TOOLCHAIN/$target$API-clang++"
     
-    go build -trimpath -buildmode=c-shared -o "$outdir/libsingbox.so" main.go
+    go build -trimpath -tags "with_quic,with_dhcp" -buildmode=c-shared -o "$outdir/libsingbox.so" main.go
 }
 
 # arm64-v8a

@@ -9,11 +9,23 @@ object RoutingConfigBuilder {
     fun build(settings: UserSettings): JSONObject {
         val routeRules = JSONArray()
 
-        // 1. HTTP Filtering (Global block list mapping if enabled)
-        // Usually added as a `rule_set`, but since AegisNet uses direct Memory Maps built by SingboxRuleCompiler
-        // we omit rule_set here and apply the raw arrays from FilterConfigBuilder inside `ConfigGenerator` flow.
+        // 1. Whitelist domains (direct pass-through, highest priority)
+        if (settings.whitelistDomains.isNotEmpty()) {
+            routeRules.put(JSONObject().apply {
+                put("domain", JSONArray(settings.whitelistDomains))
+                put("outbound", "direct")
+            })
+        }
 
-        // 2. Disable QUIC if requested (blocks port 443 UDP)
+        // 2. Block filter domains
+        if (settings.userFilters.isNotEmpty()) {
+            routeRules.put(JSONObject().apply {
+                put("domain", JSONArray(settings.userFilters))
+                put("outbound", "block")
+            })
+        }
+
+        // 3. Disable QUIC if requested (blocks port 443 UDP)
         if (settings.blockQuic) {
             routeRules.put(JSONObject().apply {
                 put("port", 443)
@@ -22,7 +34,7 @@ object RoutingConfigBuilder {
             })
         }
 
-        // 3. SNI / Smart Routing Mappings
+        // 4. SNI / Smart Routing Mappings
         settings.smartRoutingRules.filter { it.isEnabled }.forEach { rule ->
             val jsonRule = JSONObject()
             when (rule.type.lowercase()) {
@@ -36,7 +48,7 @@ object RoutingConfigBuilder {
             routeRules.put(jsonRule)
         }
         
-        // 4. Fallback - By default, unmatched traffic goes to WireGuard (or direct if WG disabled)
+        // 5. Fallback - By default, unmatched traffic goes to WireGuard (or direct if WG disabled)
         val defaultOutbound = if (settings.activeWireGuardProfile != null) "wireguard" else "direct"
         routeRules.put(JSONObject().apply {
             put("outbound", defaultOutbound)
