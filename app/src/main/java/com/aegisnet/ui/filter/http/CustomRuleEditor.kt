@@ -10,6 +10,9 @@ import androidx.compose.ui.unit.dp
 import com.aegisnet.filter.http.HttpRule
 import com.aegisnet.filter.http.parser.AdGuardHttpParser
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomRuleEditor(
@@ -36,7 +39,8 @@ fun CustomRuleEditor(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OutlinedTextField(

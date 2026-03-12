@@ -47,6 +47,7 @@ build_for_arch() {
         unset GOARM
     fi
     export CGO_ENABLED=1
+    export CGO_LDFLAGS="-Wl,-z,max-page-size=16384"
     export CC="$TOOLCHAIN/$target$API-clang"
     export CXX="$TOOLCHAIN/$target$API-clang++"
     

@@ -16,13 +16,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.aegisnet.vpn.AegisVpnService
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     onNavigateToApps: () -> Unit,
     onNavigateToDns: () -> Unit,
     onNavigateToFilters: () -> Unit,
-
     onNavigateToWhitelist: () -> Unit,
     onNavigateToRouting: () -> Unit,
     onNavigateToWireGuard: () -> Unit,
@@ -51,7 +53,8 @@ fun DashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
