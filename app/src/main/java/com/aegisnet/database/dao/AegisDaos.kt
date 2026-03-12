@@ -25,6 +25,12 @@ interface DnsProfileDao {
     
     @Delete
     suspend fun delete(profile: DnsProfile)
+    
+    @Query("UPDATE dns_profiles SET isActive = 0")
+    suspend fun deactivateAll()
+    
+    @Query("UPDATE dns_profiles SET isActive = 1 WHERE id = :id")
+    suspend fun activateProfile(id: Long)
 }
 
 @Dao

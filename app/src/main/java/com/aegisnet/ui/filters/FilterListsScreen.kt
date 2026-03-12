@@ -15,11 +15,17 @@ import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
 import java.util.*
 
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.aegisnet.database.entity.FilterList
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FilterListsScreen(onNavigateBack: () -> Unit) {
-    // Stubbed data for UI mapping
-    val items = remember { mutableStateOf(listOf("AdGuard Base", "OISD Full")) }
+fun FilterListsScreen(
+    onNavigateBack: () -> Unit,
+    viewModel: FilterListsViewModel = hiltViewModel()
+) {
+    val items by viewModel.lists.collectAsState(initial = emptyList())
+    var showAddDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -33,31 +39,91 @@ fun FilterListsScreen(onNavigateBack: () -> Unit) {
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(onClick = { /* Add functionality */ }) {
+            ExtendedFloatingActionButton(onClick = { showAddDialog = true }) {
                 Text("Add List URL")
             }
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(items.value) { item ->
-                FilterListCard(
-                    name = item,
-                    url = "https://example.com/filter.txt",
-                    lastUpdated = System.currentTimeMillis() - 86400000,
-                    isEnabled = true,
-                    onToggle = {},
-                    onUpdate = {},
-                    onDelete = {}
-                )
+        if (items.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Text("No Filter Lists. Tap 'Add List URL' to import one.")
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(items) { item ->
+                    FilterListCard(
+                        name = item.name,
+                        url = item.url,
+                        lastUpdated = item.lastUpdated,
+                        isEnabled = item.isEnabled,
+                        onToggle = { enabled -> viewModel.toggleList(item, enabled) },
+                        onUpdate = { /* Manual update trigger stub */ },
+                        onDelete = { viewModel.deleteList(item) }
+                    )
+                }
             }
         }
+        
+        if (showAddDialog) {
+            AddListDialog(
+                title = "Add Filter List",
+                onDismiss = { showAddDialog = false },
+                onAdd = { name, url ->
+                    viewModel.addList(name, url)
+                    showAddDialog = false
+                }
+            )
+        }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddListDialog(title: String, onDismiss: () -> Unit, onAdd: (String, String) -> Unit) {
+    var name by remember { mutableStateOf("") }
+    var url by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("List Name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    label = { Text("List URL (https://...)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onAdd(name, url) },
+                enabled = name.isNotBlank() && url.isNotBlank()
+            ) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable

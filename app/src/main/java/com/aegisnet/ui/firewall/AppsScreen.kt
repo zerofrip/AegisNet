@@ -22,25 +22,39 @@ fun AppsScreen(
     viewModel: AppsViewModel = hiltViewModel()
 ) {
     val apps by viewModel.apps.collectAsState(initial = emptyList())
+    val searchQuery by viewModel.searchQuery.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("App Firewall") },
                 navigationIcon = {
-                    // Placeholder for back button
                     Button(onClick = onNavigateBack) { Text("Back") }
                 }
             )
         }
     ) { padding ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            items(apps) { app ->
-                AppListItem(app = app, onClick = { onNavigateToAppDetail(app.uid) })
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = viewModel::updateSearchQuery,
+                label = { Text("Search Apps...") },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            
+            LazyColumn(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(apps) { app ->
+                    AppListItem(app = app, onClick = { onNavigateToAppDetail(app.uid) })
+                }
             }
         }
     }
